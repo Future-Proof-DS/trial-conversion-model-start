@@ -43,6 +43,53 @@ docker run -p 8000:8000 trial-conversion-model
 
 `POST /predict` takes one trial's first-3-day base aggregates and returns its conversion probability plus a low/medium/high band; `GET /health` reports service status. Interactive docs live at `/docs` while the service runs.
 
+### Checking it works
+
+With the service running, three requests and what each should come back with.
+
+A steady trial, spread across the first three days:
+
+```
+curl -s -X POST localhost:8000/predict -H "Content-Type: application/json" -d '{
+  "sessions_day1": 3, "sessions_day2": 2, "sessions_day3": 2,
+  "listen_sessions_3d": 5, "total_minutes_3d": 180,
+  "country": "US", "device_type": "iOS"
+}'
+```
+
+```
+{"conversion_probability":0.8593,"conversion_band":"high"}
+```
+
+The same trial's activity crammed into day one:
+
+```
+curl -s -X POST localhost:8000/predict -H "Content-Type: application/json" -d '{
+  "sessions_day1": 9, "sessions_day2": 0, "sessions_day3": 0,
+  "listen_sessions_3d": 4, "total_minutes_3d": 150,
+  "country": "US", "device_type": "iOS"
+}'
+```
+
+```
+{"conversion_probability":0.3385,"conversion_band":"medium"}
+```
+
+A request with `sessions_day1` missing, which the contract turns down before any
+of your code runs:
+
+```
+curl -i -s -X POST localhost:8000/predict -H "Content-Type: application/json" -d '{
+  "sessions_day2": 0, "sessions_day3": 0,
+  "listen_sessions_3d": 4, "total_minutes_3d": 150,
+  "country": "US", "device_type": "iOS"
+}'
+```
+
+```
+HTTP/1.1 422 Unprocessable Entity
+```
+
 ## Layout
 
 - `src/trial_conversion_model/`: the package. `data.py` acquires the extract from the database and loads the pipeline's inputs; `features.py` derives the model features from the snapshot's base aggregates and writes the processed training table; `train.py` trains, evaluates, and saves the model; `predict.py` scores trials from their base aggregates; `api/` is the FastAPI service (`main.py` builds the app, `routes.py` holds the endpoints, `schemas.py` defines the request and response shapes).
