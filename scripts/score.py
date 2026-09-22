@@ -19,8 +19,8 @@ if __name__ == "__main__":
     #
     # This is the lifecycle team's daily ranked list: every trial needs a
     # conversion_probability from the same predict function your API serves
-    # (routes.py shows how it's called), with the most promising trials at
-    # the top. Call what you get back `scored`.
+    # (routes.py shows how it's called), with the trials most likely to
+    # cancel at the top. Call what you get back `scored`.
 
     PREDICTIONS_DIR.mkdir(parents=True, exist_ok=True)
     out_path = (
